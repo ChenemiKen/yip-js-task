@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>Transports</title>
+    <title>Transports Delivery Planner</title>
 </head>
 <body>
     <h1>Transports</h1>
@@ -22,7 +22,7 @@
                 </thead>
                 <tbody>
                     {{#each customers}}
-                    <tr class="delivery-item" draggable="true" id="{{this.id}}">
+                    <tr class="delivery-item {{#if this.scheduled}} scheduled {{/if}}" draggable="true" id="{{this.id}}">
                         <td>{{this.id}}</td>
                         <td>{{this.name}}</td>
                         <td>{{this.pickup_loc}}</td>

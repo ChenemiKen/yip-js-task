@@ -1,5 +1,4 @@
 const Sequelize = require('sequelize');
-// const db = require('../config/database');
 
 const Db = new Sequelize('js_task', 'root', '', {
     host: 'localhost',
@@ -23,6 +22,19 @@ const Customer= Db.define('customer', {
     dropoff_loc: {
         type:Sequelize.STRING
     },
+    scheduled: {
+        type:Sequelize.BOOLEAN,
+        default:false
+    },
+    delivery_date:{
+        type:Sequelize.DATEONLY,
+        allowNull:true
+    },
+    delivery_slot:{
+        type:Sequelize.STRING,
+        allowNull:true
+    }
+
     
 })
 

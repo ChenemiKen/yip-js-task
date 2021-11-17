@@ -30,7 +30,7 @@ app.use(bodyParser.json())
 app.get('', async function(req, res, next) {
     // fetch customers from the db
     const customers = await Customer.findAll({
-        attributes:['id', 'name', 'pickup_loc', 'dropoff_loc'],
+        attributes:['id', 'name', 'pickup_loc', 'dropoff_loc', 'scheduled'],
         raw: true
     })
     
@@ -82,35 +82,60 @@ app.get('', async function(req, res, next) {
 });
 
 
-// enpoint to schedule a customer into a slot
+// enpoint/Controller to schedule a customer into a slot
 app.post('/schedule', async function(req, res, next){
     // fetch the operation data
     const customer_id = req.body.customer_id;
     const date = req.body.date;
     const slot = req.body.slot;
-    
-    // check for any schedule on the specified date. If theres a schedule, update the schedule
-    // else create a new schedule entry for the specified date
+
     try {
-        const schedule = await Planner.findAll({
-            attributes:['date', 'slot1', 'slot2', 'slot3', 'slot4'],
-            where:{
-                date:date
-            },
+        // check if the customer delivery has already been scheduled
+        const check = await Customer.findOne({
+            attributes:['id', 'name', 'scheduled', 'delivery_date', 'delivery_slot'],
+            where:{id:customer_id},
             raw:true
         })
-        if(schedule.length > 0){
-            // theres a schedule entry for that date
-            const updateSchedule = await Planner.update({[slot]:customer_id}, {
+        if(check.scheduled == false){    
+            // check for any schedule on the specified date. If theres a schedule, update the schedule
+            // else create a new schedule entry for the specified date
+            const schedule = await Planner.findAll({
+                attributes:['date', 'slot1', 'slot2', 'slot3', 'slot4'],
                 where:{
                     date:date
+                },
+                raw:true
+            })
+            if(schedule.length > 0){
+                // theres a schedule entry for that date
+                const updateSchedule = await Planner.update({[slot]:customer_id}, {
+                    where:{
+                        date:date
+                    }
+                })
+            }else{
+                // theres no schedule entry for that date yet, create one
+                const newSchedule = await Planner.create({date:date, [slot]:customer_id})
+            } 
+
+            // update customer data
+            const updateCustomer = await Customer.update({scheduled:true, delivery_date:date, delivery_slot:slot},{
+                where:{
+                    id:customer_id
                 }
             })
+
+            var data={message:'success'}
+            res.status(201).send(data)
         }else{
-            // theres no schedule entry for that date yet, create one
-            const newSchedule = await Planner.create({date:date, [slot]:customer_id})
-        } 
-        res.sendStatus(200)
+            var data={
+                message:'already scheduled',
+                delivery_date:check.delivery_date,
+                delivery_slot:check.delivery_slot,
+            }
+            res.status(208).send(data)
+        }
+
     } catch (error) {
         console.log(error)
         res.sendStatus(500)
