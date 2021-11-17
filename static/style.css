@@ -12,6 +12,9 @@ h2{
     justify-content: space-between;
     margin: 0 5%;
 }
+#customers-table{
+    margin-right: 25px;
+}
 table, td, th {
     border: 1px solid #ddd;
 }

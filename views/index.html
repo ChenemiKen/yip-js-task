@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Transports</title>
+</head>
+<body>
+    <h1>Transports</h1>
+    <div class="container">
+        <!-- Customers table -->
+        <div id="customers-table">
+            <h2>Customers</h2>
+            <table>
+                <thead>
+                    <th>cust ID</th>
+                    <th>cust Name</th>
+                    <th>PUL</th>
+                    <th>DOL</th>
+                </thead>
+                <tbody>
+                    {{#each customers}}
+                    <tr class="delivery-item" draggable="true" id="{{this.id}}">
+                        <td>{{this.id}}</td>
+                        <td>{{this.name}}</td>
+                        <td>{{this.pickup_loc}}</td>
+                        <td>{{this.dropoff_loc}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        <!-- Planners table -->
+        <div id="Planner-table">
+            <h2>Planner</h2>
+            <table>
+                <thead>
+                    <th>Date</th>
+                    <th>Slot 1</th>
+                    <th>Slot 2</th>
+                    <th>Slot 3</th>
+                    <th>Slot 4</th>
+                </thead>
+                <tbody>
+                    {{#each planner}}
+                    <tr>
+                        <td>{{this.date}}</td>
+                        <td class="slot" id="{{this.date}}%slot1">{{this.slot1}}</td>
+                        <td class="slot" id="{{this.date}}%slot2">{{this.slot2}}</td>
+                        <td class="slot" id="{{this.date}}%slot3">{{this.slot3}}</td>
+                        <td class="slot" id="{{this.date}}%slot4">{{this.slot4}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

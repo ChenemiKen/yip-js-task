@@ -1,15 +1,124 @@
-const delivery_items = document.querySelectorAll('.delivery-item');
+const path = require('path');
+const express = require('express');
+const bodyParser = require('body-parser');
+const handlebars = require('express-handlebars');
+const {Op} = require("sequelize");
+const{Db, Customer, Planner} = require('./DBmodels');
+const PORT = process.env.PORT || 5050;
 
-// attach the dragstart event handler to each delivery item in the table
-delivery_items.forEach(item => {
-    item.addEventListener('dragstart', dragStart);
+// connect to the database
+Db.authenticate()
+  .then(()=> console.log('Database connected...'))
+  .catch(err =>console.log('Error: '+err))
+
+const app = express();
+// app configs
+app.engine('html', handlebars.engine({
+    defaultLayout: false,
+    extname: 'html',
+}));
+app.set('view engine', 'html')
+app.set('views', path.join(__dirname, 'views'));
+
+app.use(express.static(path.join(__dirname, 'static')));
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+
+
+//__________________ Routes/Controllers_______________________
+// index view route/controller
+app.get('', async function(req, res, next) {
+    // fetch customers from the db
+    const customers = await Customer.findAll({
+        attributes:['id', 'name', 'pickup_loc', 'dropoff_loc'],
+        raw: true
+    })
+    
+    // seven days starting from today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dates = [];
+    for(var i=0; i<7; i++){
+        let day = new Date();
+        day.setDate(today.getDate() + i);
+        day.setHours(0, 0, 0, 0);
+        day = day.toLocaleDateString("en-US", { year: 'numeric' })+ "-"+ day.toLocaleDateString("en-US", { month: 'numeric' })+ "-" + day.toLocaleDateString("en-US", { day: 'numeric' })
+        dates.push(day)
+    }
+
+    // fetch shedules from the db
+    const schedules = await Planner.findAll({
+        attributes:['date', 'slot1', 'slot2', 'slot3', 'slot4'],
+        // only schedules in range of seven days from today
+        where:{
+            date:{
+                [Op.gte]:dates[0],
+                [Op.lte]:dates[6]
+            }
+        },
+        raw: true
+    })
+    // creating planner for the seven days interval
+    const planner = schedules
+    dates.forEach(date => {
+        if(!(planner.some(d => d.date === date))){
+            plan = {
+                date:date,
+                slot1:null,
+                slot2:null,
+                slot3:null,
+                slot4:null
+            }
+            planner.push(plan)
+        }
+    });
+    planner.sort((a, b) =>{
+        let da = new Date(a.date),db = new Date(b.date);
+        return da - db;
+    });
+    // console.log(planner);
+    // render page
+    res.render('index', {customers: customers, planner:planner});
 });
 
-// handle the dragstart
-function dragStart(e) {
-    e.dataTransfer.setData('text/plain', e.target.id);
-    setTimeout(() => {
-        e.target.classList.add('hide');
-    }, 0);
 
-}
+// enpoint to schedule a customer into a slot
+app.post('/schedule', async function(req, res, next){
+    // fetch the operation data
+    const customer_id = req.body.customer_id;
+    const date = req.body.date;
+    const slot = req.body.slot;
+    
+    // check for any schedule on the specified date. If theres a schedule, update the schedule
+    // else create a new schedule entry for the specified date
+    try {
+        const schedule = await Planner.findAll({
+            attributes:['date', 'slot1', 'slot2', 'slot3', 'slot4'],
+            where:{
+                date:date
+            },
+            raw:true
+        })
+        if(schedule.length > 0){
+            // theres a schedule entry for that date
+            const updateSchedule = await Planner.update({[slot]:customer_id}, {
+                where:{
+                    date:date
+                }
+            })
+        }else{
+            // theres no schedule entry for that date yet, create one
+            const newSchedule = await Planner.create({date:date, [slot]:customer_id})
+        } 
+        res.sendStatus(200)
+    } catch (error) {
+        console.log(error)
+        res.sendStatus(500)
+    }   
+})
+// _______________routes end______________________
+
+
+app.listen(PORT, () => {
+    console.log(`Server started listening on http://127.0.0.1:${PORT}`);
+});
